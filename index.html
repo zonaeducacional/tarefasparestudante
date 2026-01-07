@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minhas Aulas</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+        body { font-family: 'Nunito', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Grid do calendário */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    </style>
+</head>
+<body class="bg-[#C8E6F5] min-h-screen flex justify-center items-start pt-4 pb-24 select-none">
+
+    <div class="w-full max-w-md p-4 relative">
+        
+        <button id="installBtn" class="hidden fixed top-4 right-4 z-50 bg-[#4A3B32] text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg animate-bounce">
+            📲 Instalar App
+        </button>
+
+        <header class="flex items-center space-x-2 mb-2 px-2">
+            <span class="text-3xl">📚</span>
+            <h1 class="text-3xl font-bold text-[#4A3B32]">Estudos</h1>
+        </header>
+        <p class="text-[#5D4037] text-sm mb-6 px-2">Organize suas matérias e metas.</p>
+
+        <main id="tab-classes" class="space-y-6 fade-in">
+            <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-5 shadow-sm">
+                <h2 class="text-[#5D4037] font-bold text-lg mb-3">Nova Matéria</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="classNameInput" placeholder="Ex: História, Filosofia..." 
+                        class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20">
+                    <button onclick="addClass()" 
+                        class="bg-[#5D4037] text-white px-6 py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">
+                        Add
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-5 shadow-sm space-y-4">
+                <h2 class="text-[#5D4037] font-bold text-lg">Nova Tarefa</h2>
+                
+                <div id="classTagsContainer" class="flex gap-2 overflow-x-auto no-scrollbar py-1 min-h-[40px] items-center">
+                    <p class="text-xs text-gray-400 italic">Cadastre uma matéria acima primeiro...</p>
+                </div>
+
+                <input type="text" id="taskName" placeholder="Título (Ex: Prova Bimestral)" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20">
+                <input type="date" id="taskDate" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20">
+                <input type="text" id="taskKind" placeholder="Tipo (ex: Teste, Trabalho)" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20">
+                
+                <button onclick="addDueItem()" class="w-full bg-[#5D4037] text-white py-4 rounded-xl font-bold shadow-md mt-2 active:scale-95 transition-transform">
+                    Salvar Tarefa
+                </button>
+            </div>
+        </main>
+
+        <main id="tab-today" class="hidden fade-in space-y-4">
+            <div class="flex justify-between items-center px-2">
+                <h2 class="text-xl font-bold text-[#4A3B32]">Todas as Tarefas</h2>
+                <button onclick="clearAllTasks()" class="text-xs text-red-500 hover:text-red-700 font-bold underline">Limpar tudo</button>
+            </div>
+            
+            <div id="itemsList" class="space-y-3 pb-10"></div>
+            
+            <div class="text-center text-gray-500 py-10 italic hidden" id="emptyState">
+                Nenhuma tarefa cadastrada.
+            </div>
+        </main>
+
+        <main id="tab-calendar" class="hidden fade-in space-y-4">
+            <div class="flex justify-between items-center px-4">
+                <button onclick="changeMonth(-1)" class="text-[#5D4037] hover:bg-white/50 p-2 rounded-full font-bold text-xl">❮</button>
+                <h2 id="currentMonthLabel" class="text-xl font-bold text-[#4A3B32] capitalize">Janeiro 2026</h2>
+                <button onclick="changeMonth(1)" class="text-[#5D4037] hover:bg-white/50 p-2 rounded-full font-bold text-xl">❯</button>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-4 shadow-sm">
+                <div class="calendar-grid mb-2">
+                    <span class="text-xs font-bold text-gray-400">Dom</span>
+                    <span class="text-xs font-bold text-gray-400">Seg</span>
+                    <span class="text-xs font-bold text-gray-400">Ter</span>
+                    <span class="text-xs font-bold text-gray-400">Qua</span>
+                    <span class="text-xs font-bold text-gray-400">Qui</span>
+                    <span class="text-xs font-bold text-gray-400">Sex</span>
+                    <span class="text-xs font-bold text-gray-400">Sáb</span>
+                </div>
+                <div id="calendarGrid" class="calendar-grid"></div>
+            </div>
+
+            <div id="selectedDateContainer" class="hidden animate-pulse">
+                <h3 class="text-[#5D4037] font-bold text-sm ml-2 mb-2">Tarefas em <span id="selectedDateLabel"></span>:</h3>
+                <div id="calendarTasksList" class="space-y-2"></div>
+            </div>
+        </main>
+
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-[#A8C8D9]/95 backdrop-blur-md pb-6 pt-4 px-8 rounded-t-3xl flex justify-between items-end shadow-[0_-5px_20px_rgba(0,0,0,0.05)] border-t border-white/20 z-40">
+        <button onclick="switchTab('today')" id="btn-today" class="flex flex-col items-center gap-1 opacity-50 transition-opacity w-1/3">
+            <span class="text-2xl">📝</span>
+            <span class="text-xs font-bold text-[#5D4037]">Tarefas</span>
+        </button>
+        <button onclick="switchTab('calendar')" id="btn-calendar" class="flex flex-col items-center gap-1 opacity-50 transition-opacity w-1/3">
+            <span class="text-2xl">📅</span>
+            <span class="text-xs font-bold text-[#5D4037]">Calendário</span>
+        </button>
+        <button onclick="switchTab('classes')" id="btn-classes" class="flex flex-col items-center gap-1 opacity-100 transition-opacity w-1/3">
+            <span class="text-2xl">📚</span>
+            <span class="text-xs font-bold text-[#5D4037]">Matérias</span>
+        </button>
+    </nav>
+
+    <script>
+        // --- ESTADO ---
+        let classes = JSON.parse(localStorage.getItem('myClasses')) || [];
+        let tasks = JSON.parse(localStorage.getItem('myTasks')) || [];
+        let selectedClass = null;
+        
+        let currentCalendarDate = new Date();
+        let selectedCalendarDay = null;
+
+        document.getElementById('taskDate').valueAsDate = new Date();
+
+        function init() {
+            renderClassTags();
+            renderTasks();
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+        }
+
+        // --- NAVEGAÇÃO ---
+        function switchTab(tabName) {
+            document.getElementById('tab-classes').classList.add('hidden');
+            document.getElementById('tab-today').classList.add('hidden');
+            document.getElementById('tab-calendar').classList.add('hidden');
+            
+            document.getElementById('btn-classes').classList.replace('opacity-100', 'opacity-50');
+            document.getElementById('btn-today').classList.replace('opacity-100', 'opacity-50');
+            document.getElementById('btn-calendar').classList.replace('opacity-100', 'opacity-50');
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabName}`).classList.replace('opacity-50', 'opacity-100');
+
+            if(tabName === 'calendar') renderCalendar();
+        }
+
+        // --- EXCLUSÃO DE MATÉRIAS (NOVO) ---
+        function removeClass(className) {
+            // Pergunta antes de apagar
+            if(confirm(`Deseja apagar a matéria "${className}"?`)) {
+                classes = classes.filter(c => c !== className);
+                localStorage.setItem('myClasses', JSON.stringify(classes));
+                
+                // Se a que estava selecionada foi apagada, reseta a seleção
+                if (selectedClass === className) {
+                    selectedClass = classes.length > 0 ? classes[classes.length - 1] : null;
+                }
+                renderClassTags();
+            }
+        }
+
+        // --- RENDERIZAÇÃO DE MATÉRIAS (ATUALIZADO) ---
+        function renderClassTags() {
+            const container = document.getElementById('classTagsContainer');
+            container.innerHTML = '';
+            
+            if (classes.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 italic pl-1">Adicione uma matéria...</p>';
+                return;
+            }
+
+            classes.forEach((cls) => {
+                // Container da Tag
+                const tagWrapper = document.createElement('div');
+                const isSelected = selectedClass === cls;
+                
+                tagWrapper.className = `inline-flex items-center pl-3 pr-1 py-1.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer select-none border border-transparent ${
+                    isSelected ? 'bg-[#E69A8D] text-white shadow-md' : 'bg-[#E69A8D]/30 text-[#5D4037] hover:border-[#E69A8D]'
+                }`;
+
+                // Nome da Matéria (Clicar seleciona)
+                const textSpan = document.createElement('span');
+                textSpan.innerText = cls;
+                textSpan.className = "mr-1";
+                textSpan.onclick = () => {
+                    selectedClass = cls;
+                    renderClassTags();
+                };
+
+                // Botão "X" de excluir (Clicar apaga)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '×'; 
+                deleteBtn.className = `w-6 h-6 flex items-center justify-center rounded-full text-lg leading-none hover:bg-black/10 transition-colors ml-1 ${isSelected ? 'text-white' : 'text-[#5D4037]'}`;
+                deleteBtn.title = "Apagar matéria";
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation(); // Evita selecionar ao clicar no X
+                    removeClass(cls);
+                };
+
+                tagWrapper.appendChild(textSpan);
+                tagWrapper.appendChild(deleteBtn);
+                container.appendChild(tagWrapper);
+            });
+
+            // Auto-seleção se necessário (apenas visualmente na próxima iteração se a variável mudou)
+            if (!selectedClass && classes.length > 0) {
+                selectedClass = classes[classes.length - 1];
+                // Pequeno hack para garantir que a UI reflita a auto-seleção sem loop infinito
+                setTimeout(renderClassTags, 0); 
+            }
+        }
+
+        function addClass() {
+            const input = document.getElementById('classNameInput');
+            const name = input.value.trim();
+            if (name) {
+                // Evita duplicatas
+                if(!classes.includes(name)) {
+                    classes.push(name);
+                    localStorage.setItem('myClasses', JSON.stringify(classes));
+                    input.value = '';
+                    selectedClass = name; // Já seleciona a nova
+                    renderClassTags();
+                } else {
+                    alert("Esta matéria já existe!");
+                }
+            }
+        }
+
+        // --- TAREFAS (Igual anterior) ---
+        function removeTask(id) {
+            if(confirm("Tem certeza que deseja apagar esta tarefa?")) {
+                tasks = tasks.filter(t => t.id !== id);
+                localStorage.setItem('myTasks', JSON.stringify(tasks));
+                renderTasks();
+                if(!document.getElementById('tab-calendar').classList.contains('hidden')){
+                    renderCalendar();
+                    if (selectedCalendarDay) showTasksForDate(selectedCalendarDay);
+                }
+            }
+        }
+
+        function clearAllTasks() {
+            if(tasks.length === 0) return;
+            if(confirm("ATENÇÃO: Isso apagará TODAS as tarefas. Continuar?")) {
+                tasks = [];
+                localStorage.setItem('myTasks', JSON.stringify(tasks));
+                renderTasks();
+                renderCalendar();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('itemsList');
+            const emptyMsg = document.getElementById('emptyState');
+            list.innerHTML = ''; 
+
+            if (tasks.length === 0) {
+                if(emptyMsg) emptyMsg.classList.remove('hidden');
+                return;
+            } else {
+                if(emptyMsg) emptyMsg.classList.add('hidden');
+            }
+            const sortedTasks = tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
+            sortedTasks.forEach(task => {
+                const itemHTML = document.createElement('div');
+                itemHTML.className = "bg-white/80 rounded-2xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow";
+                itemHTML.innerHTML = `
+                    <div>
+                        <div class="flex gap-2 items-center mb-1">
+                            <span class="bg-[#E69A8D] text-white text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">${task.subject}</span>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase">${task.kind || 'Geral'}</span>
+                        </div>
+                        <h3 class="font-bold text-[#5D4037] text-base">${task.name}</h3>
+                        <div class="flex items-center gap-1 mt-1">
+                             <span class="text-xs text-gray-500">📅 ${new Date(task.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span>
+                        </div>
+                    </div>
+                    <button onclick="removeTask(${task.id})" class="text-red-400 hover:bg-red-100 p-2 rounded-full transition-colors" title="Apagar Tarefa">
+                        🗑️
+                    </button>
+                `;
+                list.appendChild(itemHTML);
+            });
+        }
+
+        function addDueItem() {
+            if (!selectedClass) { alert("Crie uma matéria primeiro."); return; }
+            const taskName = document.getElementById('taskName').value;
+            const date = document.getElementById('taskDate').value;
+            const kind = document.getElementById('taskKind').value;
+            if(!taskName) { alert("Digite o nome da tarefa."); return; }
+
+            const newTask = { id: Date.now(), subject: selectedClass, name: taskName, date: date, kind: kind };
+            tasks.push(newTask);
+            localStorage.setItem('myTasks', JSON.stringify(tasks));
+            
+            document.getElementById('taskName').value = '';
+            alert("Tarefa salva!");
+            renderTasks();
+            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+        }
+
+        // --- CALENDÁRIO ---
+        function changeMonth(step) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + step);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const label = document.getElementById('currentMonthLabel');
+            grid.innerHTML = '';
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentCalendarDate);
+            label.innerText = monthName;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) grid.appendChild(document.createElement('div'));
+
+            for (let day = 1; day <= lastDay; day++) {
+                const dayDiv = document.createElement('div');
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasTask = tasks.some(t => t.date === dateString);
+                
+                dayDiv.className = "h-10 w-10 flex flex-col items-center justify-center rounded-full cursor-pointer hover:bg-[#E69A8D]/20 transition relative";
+                
+                const today = new Date();
+                if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add('border-2', 'border-[#5D4037]');
+                }
+
+                if (selectedCalendarDay === dateString) {
+                    dayDiv.classList.add('bg-[#5D4037]', 'text-white');
+                } else {
+                    dayDiv.classList.add('text-gray-700');
+                }
+
+                dayDiv.innerHTML = `<span class="text-sm font-bold z-10">${day}</span>`;
+
+                if (hasTask) {
+                    const dot = document.createElement('div');
+                    const dotColor = (selectedCalendarDay === dateString) ? 'bg-white' : 'bg-[#E69A8D]';
+                    dot.className = `w-1.5 h-1.5 rounded-full absolute bottom-1.5 ${dotColor}`;
+                    dayDiv.appendChild(dot);
+                }
+
+                dayDiv.onclick = () => {
+                    selectedCalendarDay = dateString;
+                    renderCalendar(); 
+                    showTasksForDate(dateString);
+                };
+                grid.appendChild(dayDiv);
+            }
+        }
+
+        function showTasksForDate(dateString) {
+            const container = document.getElementById('selectedDateContainer');
+            const list = document.getElementById('calendarTasksList');
+            const label = document.getElementById('selectedDateLabel');
+            
+            const [y, m, d] = dateString.split('-');
+            label.innerText = `${d}/${m}`;
+
+            const dayTasks = tasks.filter(t => t.date === dateString);
+            list.innerHTML = '';
+            
+            container.classList.remove('hidden');
+
+            if (dayTasks.length > 0) {
+                dayTasks.forEach(task => {
+                    const el = document.createElement('div');
+                    el.className = "bg-white p-3 rounded-xl flex items-center justify-between shadow-sm border border-gray-100";
+                    el.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="bg-[#E69A8D] text-white text-[10px] px-2 py-1 rounded font-bold">${task.subject}</span>
+                            <div class="flex flex-col">
+                                <span class="text-[#5D4037] text-sm font-bold">${task.name}</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">${task.kind || ''}</span>
+                            </div>
+                        </div>
+                        <button onclick="removeTask(${task.id})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Apagar">
+                            🗑️
+                        </button>
+                    `;
+                    list.appendChild(el);
+                });
+            } else {
+                list.innerHTML = `<p class="text-sm text-gray-500 italic text-center py-2">Nada agendado para este dia.</p>`;
+            }
+        }
+
+        // --- PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.remove('hidden');
+        });
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('installBtn').classList.add('hidden');
+                deferredPrompt = null;
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
